@@ -25,6 +25,9 @@ From: ubuntu:22.04
 		exit 0
 	fi
 
+	# Set up OLLAMA_HOST if OLLAMA_PORT is set:
+	export OLLAMA_HOST="${OLLAMA_HOST:-0.0.0.0${OLLAMA_PORT:+:${OLLAMA_PORT}}}"
+
 	# If we're runninng on klone, we should have access to /gscratch/scrubbed.
 	# However, by default, /gscratch is not mounted in the container, whereas /mmfs1 is.
 	# /gscratch is the same as /mmfs1/gscratch, so we can use /mmfs1/gscratch/scrubbed.
