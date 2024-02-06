@@ -1,0 +1,54 @@
+name: Apptainer Build
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - README.md.esh
+      - .github/workflows/scripts/esh
+      - .github/workflows/build-documentation.yml
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    name: Build documentation
+    permissions: write-all
+    steps:
+      - name: Check out code for the container build
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build documentation
+        shell: bash
+        run: |
+          set -eux -o pipefail
+          
+          # Run esh to fill in the variables:
+          "${GITHUB_WORKSPACE}/.github/workflows/scripts/esh" "${GITHUB_WORKSPACE}/README.md.esh" > "${GITHUB_WORKSPACE}/README.md"
+  
+          # Stage files:
+          git add README.md
+          
+          # Build additions to commit message:
+          commit_args=()
+
+          # Get the last commit message, if any:
+          last_commit_msg="$(git log -1 --pretty=format:%B || true)"
+
+          if git diff --staged --name-only "README.md" | grep -Fq "README.md"; then
+            commit_args+=(-m "GITHUB_ACTION=\"${GITHUB_ACTION:-}\": Templated \"README.md\" for GITHUB_REPOSITORY=\"${GITHUB_REPOSITORY}\"")
+          fi
+          
+          if (( "${#commit_args[@]}" > 1 )); then
+
+            # Don't append to commit message:
+            if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]] && [[ "${GITHUB_REF}" =~ ^.*@.*$ ]]; then
+              echo "Not appending commit messages because this is a tagged release" >&2
+              commit_args=()
+            fi
+
+            # Set up git config for push:
+            git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
+            git config --local user.name ${{ github.event.sender.login }}
+            git commit -a "${last_commit_msg:+-m ${last_commit_msg:-}}" "${commit_args[@]}"  && git push --force
+          fi
