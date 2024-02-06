@@ -2,7 +2,7 @@ Bootstrap: docker
 From: ubuntu:22.04
 
 %setup
-    [ -n "${APPTAINER_ROOTFS:-}" ] && ../.build-scripts/write-apptainer-labels.sh >"${APPTAINER_ROOTFS}/.build_labels"
+    [ -n "${APPTAINER_ROOTFS:-}" ] && ./build-scripts/write-apptainer-labels.sh >"${APPTAINER_ROOTFS}/.build_labels"
 
 %post
 	set -ex
