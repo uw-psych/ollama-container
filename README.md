@@ -55,4 +55,10 @@ apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest r
 
 For other models, you can replace `dolphin-phi` with the name of the model you want to use. You can find a list of available models [here](https://ollama.ai/library).
 
+You can stop the server with the following command:
+
+```bash
+pkill -f "ollama serve"
+```
+
 See the [documentation](https://github.com/ollama/ollama) for more information on how to use ollama.
