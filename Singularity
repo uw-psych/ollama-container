@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: alpine:3
+From: ubuntu:22.04
 
 %setup
     [ -n "${APPTAINER_ROOTFS:-}" ] && ./.build-scripts/write-apptainer-labels.sh >"${APPTAINER_ROOTFS}/.build_labels"
