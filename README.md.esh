@@ -20,7 +20,7 @@ salloc --account escience --partition gpu-a40 --mem 64G -c 8 --time 1:00:00 --gp
 
 One you're logged in to the compute node, you should set up your cache directories and Apptainer settings.
 
-👉 *If you're following this tutorial, **you should do this every time you're running ollama on Hyak!** This is because the default settings for Apptainer will use your home directory for caching, which will quickly fill up your home directory and cause your jobs to fail. If you are aware of this and have already set `APPTAINER_CACHEDIR`, you can ignore this*
+👉 *If you're following this tutorial, **you should do this every time you're running ollama on Hyak!** This is because the default settings for Apptainer will use your home directory for caching, which will quickly fill up your home directory and cause your jobs to fail. If you are aware of this and have already set `APPTAINER_CACHEDIR`, you can remove the line that sets `APPTAINER_CACHEDIR`.*
 
 ```bash
 # Do this in every session where you're running ollama on Hyak!
@@ -37,7 +37,7 @@ export APPTAINER_BIND=/gscratch APPTAINER_WRITABLE_TMPFS=1 APPTAINER_NV=1
 Next, you'll have to start the ollama server. Before you do this, you'll need to find an open port to use. You can do this with the `random-port` command embedded in this container:
 
 ```bash
-OLLAMA_PORT=$(apptainer run oras://ghcr.io/<%= "${GITHUB_REPOSITORY:-uw-psych/ollama-container}" %>/ollama-container:latest random-port)
+export OLLAMA_PORT=$(apptainer run oras://ghcr.io/<%= "${GITHUB_REPOSITORY:-uw-psych/ollama-container}" %>/ollama-container:latest random-port)
 
 # Start the ollama server (make sure you include the `&` at the end to run it in the background):
 apptainer run oras://ghcr.io/<%= "${GITHUB_REPOSITORY:-uw-psych/ollama-container}" %>/ollama-container:latest &
