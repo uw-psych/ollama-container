@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:22.04
+From: alpine:3
 
 %setup
     [ -n "${APPTAINER_ROOTFS:-}" ] && ./.build-scripts/write-apptainer-labels.sh >"${APPTAINER_ROOTFS}/.build_labels"
@@ -26,7 +26,7 @@ From: ubuntu:22.04
 	fi
 
 	# Set up OLLAMA_HOST if OLLAMA_PORT is set:
-	export OLLAMA_HOST="${OLLAMA_HOST:-0.0.0.0${OLLAMA_PORT:+:${OLLAMA_PORT}}}"
+	export OLLAMA_HOST="${OLLAMA_HOST:-127.0.0.1${OLLAMA_PORT:+:${OLLAMA_PORT}}}"
 
 	# If we're runninng on klone, we should have access to /gscratch/scrubbed.
 	# However, by default, /gscratch is not mounted in the container, whereas /mmfs1 is.
