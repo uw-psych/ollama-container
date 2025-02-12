@@ -34,13 +34,25 @@ mkdir -p "${APPTAINER_CACHEDIR}" "${OLLAMA_MODELS}"
 export APPTAINER_BIND=/gscratch APPTAINER_WRITABLE_TMPFS=1 APPTAINER_NV=1
 ```
 
+Next, build the container. (You only need to do this once.)
+
+```bash
+mkdir -p "/gscratch/scrubbed/${USER}/ollama"
+cd "/gscratch/scrubbed/${USER}/ollama"
+git clone https://github.com/uw-psych/ollama-container
+cd ollama-container
+apptainer build ollama.sif Singularity
+```
+
 Next, you'll have to start the ollama server. Before you do this, you'll need to find an open port to use. You can do this with the `random-port` command embedded in this container:
 
 ```bash
-export OLLAMA_PORT=$(apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest random-port)
+export OLLAMA_PORT="$(apptainer run ollama.sif random-port)"
+```
 
+```bash
 # Start the ollama server (make sure you include the `&` at the end to run it in the background):
-apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest &
+apptainer run ollama.sif serve &
 
 # Wait a few seconds for the server to start up:
 sleep 5
@@ -50,7 +62,7 @@ Once the server is running, you can start an interactive prompt with the followi
 
 ```bash
 # Start an interactive prompt with the qwen:0.5b model:
-apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest run qwen:0.5b
+apptainer run ollama.sif run qwen:0.5b
 ```
 
 For other models, you can replace `qwen:0.5b` with the name of the model you want to use. You can find a list of available models [here](https://ollama.ai/library).
@@ -58,16 +70,14 @@ For other models, you can replace `qwen:0.5b` with the name of the model you wan
 To list available models, try:
 
 ```bash
-apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest
-available
+apptainer run ollama.sif available
 ```
 
 To list available tags for a model, try:
 
 ```bash
-apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest
-available tags qwen
+# Replace `qwen` with the name of the model you want to check:
+apptainer run ollama.sif available tags qwen
 ```
 
 See the [documentation](https://github.com/ollama/ollama) for more information on how to use `ollama`.
-
