@@ -15,7 +15,7 @@ Then, you'll need to request a compute node. You can do this with the `salloc` c
 ```bash
 # Request a GPU node with 8 CPUs, 2 GPUs, 64GB of RAM, and 1 hour of runtime:
 # (Note: you may need to change the account and partition)
-salloc --account escience --partition gpu-a40 --mem 64G -c 8 --time 1:00:00 --gpus 2
+salloc --account escience --partition gpu-a40 --mem 64G -c 2 --time 1:00:00 --gpus 1
 ```
 
 One you're logged in to the compute node, you should set up your cache directories and Apptainer settings.
@@ -49,10 +49,25 @@ sleep 5
 Once the server is running, you can start an interactive prompt with the following command:
 
 ```bash
-# Start an interactive prompt with the dolphin-phi model (1.6 GB):
-apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest run dolphin-phi
+# Start an interactive prompt with the qwen:0.5b model:
+apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest run qwen:0.5b
 ```
 
-For other models, you can replace `dolphin-phi` with the name of the model you want to use. You can find a list of available models [here](https://ollama.ai/library).
+For other models, you can replace `qwen:0.5b` with the name of the model you want to use. You can find a list of available models [here](https://ollama.ai/library).
 
-See the [documentation](https://github.com/ollama/ollama) for more information on how to use ollama.
+To list available models, try:
+
+```bash
+apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest
+available
+```
+
+To list available tags for a model, try:
+
+```bash
+apptainer run oras://ghcr.io/uw-psych/ollama-container/ollama-container:latest
+available tags qwen
+```
+
+See the [documentation](https://github.com/ollama/ollama) for more information on how to use `ollama`.
+
