@@ -12,23 +12,14 @@ jobs:
         packages: write
     steps:
       - name: Install Apptainer
-        uses: uw-psych/apptainer-actions/setup@dev
+        uses: uw-psych/apptainer-actions/setup
       - name: Check out code for the container build
         uses: actions/checkout@v4
-      - name: Get version
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
-            case "${GITHUB_REF_NAME:-}" in
-              v?*) INPUT_IMAGE_VERSION="${GITHUB_REF_NAME#v}";;
-              *@?*) INPUT_IMAGE_VERSION="${GITHUB_REF_NAME#*@}";;
-              *) echo "Invalid tag: \"${GITHUB_REF_NAME:-}\"" >&2; exit 1;;
-            esac
-            echo "INPUT_IMAGE_VERSION=${IMAGE_VERSION}" >> "${GITHUB_ENV}"
-          fi
       - name: Build Container
-        uses: uw-psych/apptainer-actions/build-and-push@dev
+        uses: uw-psych/apptainer-actions/build-and-push
         with:
           deffile: 'Singularity'
-          image-version: ${{ env.INPUT_IMAGE_VERSION }}
+          apptainer-tmpdir: ${{ github.workspace }}/apptainer-tmp
+          image-dir: ${{ github.workspace }}
+          image-version: ${{ github.ref_name }}
 
