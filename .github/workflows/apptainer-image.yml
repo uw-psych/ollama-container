@@ -12,11 +12,11 @@ jobs:
         packages: write
     steps:
       - name: Install Apptainer
-        uses: uw-psych/apptainer-actions/setup
+        uses: uw-psych/apptainer-actions/setup@main
       - name: Check out code for the container build
         uses: actions/checkout@v4
       - name: Build Container
-        uses: uw-psych/apptainer-actions/build-and-push
+        uses: uw-psych/apptainer-actions/build-and-push@main
         with:
           deffile: 'Singularity'
           apptainer-tmpdir: ${{ github.workspace }}/apptainer-tmp
