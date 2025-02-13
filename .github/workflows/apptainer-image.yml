@@ -1,110 +1,25 @@
 name: Apptainer Build
+
 on:
-  push:
-    tags:
-      - "*@*"
-
-defaults:
-  run:
-    shell: bash
-
-env:
-  APPTAINER_VERSION: 1.2.5
-  ORAS_VERSION: 1.1.0
+  workflow_dispatch
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     name: Build Apptainer image
     permissions:
-        contents: write
+        contents: read
         packages: write
-
     steps:
-      - name: Download Apptainer
-        run: |
-          set -eux -o pipefail
-          curl -o "apptainer-${APPTAINER_VERSION}.deb" -L https://github.com/apptainer/apptainer/releases/download/v${APPTAINER_VERSION}/apptainer_${APPTAINER_VERSION}_amd64.deb
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update -yq  || echo "Couldn't update apt packages. Will attempt installation without update" >&2
-          sudo dpkg --install --force-depends "apptainer-${APPTAINER_VERSION}.deb" && sudo apt-get install --fix-broken --yes --quiet
-          apptainer >&2 --version && echo >&2 "Apptainer installed successfully!"
-          apptainer remote login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} oras://ghcr.io && echo "Logged in to remote registry successfully" >&2
-
-      - name: Install ORAS
-        run: |
-          set -eux -o pipefail
-          curl -o "oras_${ORAS_VERSION}.tar.gz" -L "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
-
-          # Install the executable:
-          tar -xvf oras_${ORAS_VERSION}.tar.gz && chmod +x oras && sudo mv oras /usr/local/bin/oras
-          sudo mv "${DOWNLOAD_PATH}" /usr/local/bin/oras && sudo chmod +x /usr/local/bin/oras & oras >&2 version && echo >&2 "oras installed successfully!"
-          oras login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io && echo "Logged in to remote registry successfully" >&2
-
+      - name: Install Apptainer
+        uses: uw-psych/apptainer-actions/setup@main
       - name: Check out code for the container build
         uses: actions/checkout@v4
-
       - name: Build Container
-        run: |
-          set -eux -o pipefail
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]] && [[ "${GITHUB_REF}" =~ ^.*@.*$ ]]; then
-              [[ -z "${IMAGE_NAME:-}" ]] && IMAGE_NAME="${GITHUB_REF%%@*}" && IMAGE_NAME="${IMAGE_NAME##refs/tags/}"
-              [[ -z "${IMAGE_TAG:-}" ]] && IMAGE_TAG="${GITHUB_REF##*@}" && IMAGE_TAG="${IMAGE_TAG##*v}"
-          fi
+        uses: uw-psych/apptainer-actions/build-and-push@main
+        with:
+          deffile: 'Singularity'
+          apptainer-tmpdir: ${{ github.workspace }}/apptainer-tmp
+          image-dir: ${{ github.workspace }}
+          image-version: ${{ github.ref_name }}
 
-          [[ -z "${IMAGE_NAME:-}" ]] && IMAGE_NAME="${GITHUB_REPOSITORY##*/}"
-          [[ -z "${IMAGE_TAG:-}" ]] && IMAGE_TAG="$(date +%s)"
-
-          if [[ -d "${IMAGE_NAME}" ]] && [[ -f "${IMAGE_NAME}/Singularity" ]]; then
-            cd "${IMAGE_NAME}"
-            echo "Using Singularity file in ${PWD}" >&2
-          elif [[ -f Singularity ]]; then
-            echo "Using Singularity file in root directory" >&2
-          else
-            echo "No Singularity file found in \"${IMAGE_NAME:-}\" or root directory" >&2
-            exit 1
-          fi
-          
-          IMAGE_PATH="${GITHUB_WORKSPACE}/${IMAGE_NAME}".sif
-
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
-          echo "IMAGE_PATH=${IMAGE_PATH}" >> $GITHUB_ENV
-
-          echo "IMAGE_NAME=${IMAGE_NAME}" >&2
-          echo "IMAGE_TAG=${IMAGE_TAG}" >&2
-          echo "IMAGE_PATH=${IMAGE_PATH}" >&2
-        
-          apptainer build --nv --fix-perms --disable-cache --force "${IMAGE_PATH}" Singularity
-          
-          echo "Container built successfully" >&2
-          
-          echo "Container size:" >&2
-          du -h "${IMAGE_PATH}" >&2
-          
-          echo "Container labels:" >&2
-          apptainer inspect "${IMAGE_PATH}" >&2
-
-      - name: Push Container
-        run: |
-          set -eux -o pipefail
-          
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]] && [[ "${GITHUB_REF}" =~ ^.*@.*$ ]]; then
-              [[ -z "${IMAGE_NAME:-}" ]] && IMAGE_NAME="${GITHUB_REF%%@*}" && IMAGE_NAME="${IMAGE_NAME##refs/tags/}"
-              [[ -z "${IMAGE_TAG:-}" ]] && IMAGE_TAG="${GITHUB_REF##*@}" && IMAGE_TAG="${IMAGE_TAG##*v}"
-          fi
-
-          [[ -z "${IMAGE_NAME:-}" ]] && IMAGE_NAME="${GITHUB_REPOSITORY##*/}"
-          [[ -z "${IMAGE_TAG:-}" ]] && IMAGE_TAG="$(date +%s)"
-        
-          # Log in:
-          apptainer remote login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} oras://ghcr.io
-
-          # Push the image:
-          apptainer push -U "${IMAGE_PATH}" oras://ghcr.io/${{ github.repository }}/${IMAGE_NAME}:${IMAGE_TAG}
-
-          # Tag the image as latest if it's not a pre-release:
-          if [[ "${IMAGE_TAG}" != "latest" ]] && [[ ! "${IMAGE_TAG}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-.+$ ]]; then
-            oras tag -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ghcr.io/${{ github.repository }}/${IMAGE_NAME}:${IMAGE_TAG} latest
-          fi
-          echo "Done" >&2
